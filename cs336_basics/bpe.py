@@ -182,23 +182,36 @@ def train_bpe(
         merges.append(merge_bp)
         vocab[len(vocab)] = merge_bp[0] + merge_bp[1]
 
-        # maintain 1
+        # maintain 1 and the subset of ledger that's changed (pre_merge_bytes, post_merge_bytes, pretok_count)
+        affect_ledger = dict()
         for pretok_id,v in pretok_bytes_count_ledger.items():
             if pretok_id in bp_pretok[merge_bp]:
                 pretok_bytes = pretok_bytes_count_ledger[pretok_id][0]
                 pretok_count = pretok_bytes_count_ledger[pretok_id][1]
-                pretok_bytes_count_ledger[pretok_id] = (update_pretoken(pretok_bytes, merge_bp), pretok_count)
+                updated_pretok_bytes = update_pretoken(pretok_bytes, merge_bp)
+                pretok_bytes_count_ledger[pretok_id] = (updated_pretok_bytes, pretok_count)
+                affect_ledger[pretok_id] = (pretok_bytes, updated_pretok_bytes, pretok_count)
 
-        # maintain 2 and 3
-        # TODO: only update based on pretokens where merge happened
-        bp_count = defaultdict(int)
-        bp_pretok = defaultdict(list)
-        for pretok_id,v in pretok_bytes_count_ledger.items():
-            pretok_bytes, pc = v
-            this_bp_count = count_bytepair(pretok_bytes)
-            for bp,bc in this_bp_count.items():
+        # maintain 2 and 3, subtract old affected counts, add new affected counts
+        for pretok_id, v in affect_ledger.items():
+            old_bp_count = count_bytepair(v[0])
+            new_bp_count = count_bytepair(v[1])
+            pc = v[2]
+            for bp,bc in old_bp_count.items():
+                bp_count[bp] -= pc * bc
+            for bp,bc in new_bp_count.items():
                 bp_count[bp] += pc * bc
-                bp_pretok[bp].append(pretok_id)        
+                if pretok_id not in bp_pretok[bp]:
+                    bp_pretok[bp].append(pretok_id)
+
+        # bp_count = defaultdict(int)
+        # bp_pretok = defaultdict(list)
+        # for pretok_id,v in pretok_bytes_count_ledger.items():
+        #     pretok_bytes, pc = v
+        #     this_bp_count = count_bytepair(pretok_bytes)
+        #     for bp,bc in this_bp_count.items():
+        #         bp_count[bp] += pc * bc
+        #         bp_pretok[bp].append(pretok_id)        
 
     return vocab, merges
     
