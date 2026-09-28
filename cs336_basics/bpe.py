@@ -1,33 +1,12 @@
-import argparse
 import multiprocessing
 import os
 import regex as re
 from collections import defaultdict, Counter
 from functools import partial, reduce
 from typing import BinaryIO
+import pickle
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(
-        description="Byte-pair encoding exercise"
-    )
-    parser.add_argument(
-        "-i", "--input-path",
-        type=str,
-        help="Path to a text file with BPE tokenizer training data"
-    )
-    parser.add_argument(
-        "-v", "--vocab-size",
-        type=int,
-        help="A positive integer that defines the maximum final vocabulary size"
-    )
-    parser.add_argument(
-        "-s", "--special-tokens",
-        type=list[str],
-        help="A list of strings to add to the vocabulary"
-    )
-    return parser.parse_args()
 
 def find_chunk_boundaries(
     file: BinaryIO,
@@ -99,6 +78,7 @@ def pretokenize(
             ret[key] += 1
     return ret
 
+
 def count_bytepair(pretoken: tuple[bytes, ...]) -> dict[tuple[bytes, bytes], int]:
     ret = defaultdict(int)
     if len(pretoken) < 2:
@@ -107,6 +87,7 @@ def count_bytepair(pretoken: tuple[bytes, ...]) -> dict[tuple[bytes, bytes], int
         key = (pretoken[i], pretoken[i+1])
         ret[key] += 1
     return dict(ret)
+
 
 def update_pretoken(pretoken: tuple[bytes, ...], merge: tuple[bytes, bytes]) -> tuple[bytes, ...]:
     # updates pretoken merging bytes
@@ -124,6 +105,7 @@ def update_pretoken(pretoken: tuple[bytes, ...], merge: tuple[bytes, bytes]) -> 
             i += 1
     ret = tuple(new_list)
     return ret
+
 
 def train_bpe(
     input_path: str,
@@ -184,13 +166,12 @@ def train_bpe(
 
         # maintain 1 and the subset of ledger that's changed (pre_merge_bytes, post_merge_bytes, pretok_count)
         affect_ledger = dict()
-        for pretok_id,v in pretok_bytes_count_ledger.items():
-            if pretok_id in bp_pretok[merge_bp]:
-                pretok_bytes = pretok_bytes_count_ledger[pretok_id][0]
-                pretok_count = pretok_bytes_count_ledger[pretok_id][1]
-                updated_pretok_bytes = update_pretoken(pretok_bytes, merge_bp)
-                pretok_bytes_count_ledger[pretok_id] = (updated_pretok_bytes, pretok_count)
-                affect_ledger[pretok_id] = (pretok_bytes, updated_pretok_bytes, pretok_count)
+        for pretok_id in bp_pretok[merge_bp]:
+            pretok_bytes = pretok_bytes_count_ledger[pretok_id][0]
+            pretok_count = pretok_bytes_count_ledger[pretok_id][1]
+            updated_pretok_bytes = update_pretoken(pretok_bytes, merge_bp)
+            pretok_bytes_count_ledger[pretok_id] = (updated_pretok_bytes, pretok_count)
+            affect_ledger[pretok_id] = (pretok_bytes, updated_pretok_bytes, pretok_count)
 
         # maintain 2 and 3, subtract old affected counts, add new affected counts
         for pretok_id, v in affect_ledger.items():
@@ -203,6 +184,10 @@ def train_bpe(
                 bp_count[bp] += pc * bc
                 if pretok_id not in bp_pretok[bp]:
                     bp_pretok[bp].append(pretok_id)
+        dropped_bps = set([k for k,v in bp_count.items() if v == 0])
+        for bp in dropped_bps:
+            bp_count.pop(bp, None)
+            bp_pretok.pop(bp, None)
 
         # bp_count = defaultdict(int)
         # bp_pretok = defaultdict(list)
@@ -214,8 +199,75 @@ def train_bpe(
         #         bp_pretok[bp].append(pretok_id)        
 
     return vocab, merges
-    
 
-if __name__ == "__main__":
-    args = parse_arguments()
-    vocab, merges = train_bpe(args.input_path, args.vocab_size, args.special_tokens, 4)
+class Tokenizer():
+    def __init__(self, vocab, merges, special_tokens=None):
+        self.vocab = vocab # id -> bytes, decoding
+        reverse_vocab = dict()
+        for i, b in vocab.items():
+            reverse_vocab[b] = i
+        self.reverse_vocab = reverse_vocab # bytes -> id, encoding
+        merges_rank = dict()
+        for i, pair in enumerate(merges):
+            merges_rank[pair] = i
+        self.merges_rank = merges_rank
+        self.special_tokens = sorted(special_tokens, key=len, reverse=True) if special_tokens != None else []
+
+    @classmethod
+    def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
+        with open(vocab_filepath, "rb") as f:
+            vocab = pickle.load(f)
+        with open(merges_filepath, "rb") as f:
+            merges = pickle.load(f)
+        ret = cls(vocab, merges, special_tokens)
+        return ret
+
+    def _encode_pretoken(self, pretoken: tuple[bytes, ...]) -> list[int]:
+        candidate_special_token = b"".join(pretoken)
+        if candidate_special_token.decode("utf-8") in self.special_tokens:
+            return [self.reverse_vocab[candidate_special_token]]
+        while len(pretoken) >= 2:
+            current_rank = -1
+            current_merge = None
+            for i in range(len(pretoken) - 1):
+                candidate_merge = (pretoken[i], pretoken[i+1])
+                if candidate_merge in self.merges_rank:
+                    if current_rank < 0 or self.merges_rank[candidate_merge] < current_rank:
+                        current_merge = candidate_merge
+                        current_rank = self.merges_rank[current_merge]
+            if current_rank < 0:
+                break
+            pretoken = update_pretoken(pretoken, current_merge)
+        return [self.reverse_vocab[b] for b in pretoken]
+
+    def _pretokenize(self, text: str) -> list[tuple[bytes, ...]]:
+        split_pattern = '|'.join([re.escape(p) for p in self.special_tokens])
+        if split_pattern != '':
+            mini_chunks = re.split(f"({split_pattern})", text) # keep delimiter
+        else:
+            mini_chunks = [text]
+        ret = list()
+        for mini_chunk in mini_chunks:
+            if mini_chunk in self.special_tokens:
+                ret.append(tuple([bytes([t]) for t in mini_chunk.encode("utf-8")]))
+            else:
+                for m in re.finditer(PAT, mini_chunk):
+                    pretoken = m.group(0).encode("utf-8")
+                    ret.append(tuple([bytes([t]) for t in pretoken]))
+        return ret
+        
+    def encode(self, text: str) -> list[int]:
+        pretokens = self._pretokenize(text)
+        encoded = []
+        for pretoken in pretokens:
+            encoded.extend(self._encode_pretoken(pretoken))
+        return encoded
+
+    def encode_iterable(self, iterable):
+        return None
+
+    def decode(self, ids: list[int]) -> str:
+        ret = b''
+        for id in ids:
+            ret+= self.vocab[id]
+        return ret.decode("utf-8", errors="replace")

@@ -146,19 +146,7 @@ TODO
 
 ### train_bpe — BPE Tokenizer Training
 
-**Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
+**Status:** done
 
 ### train_bpe_tinystories — BPE Training on TinyStories
 
@@ -168,37 +156,14 @@ TODO
 
 **My answer:**
 
-TODO
+100s. Longest token is ‘ accomplishment’. Makes sense because it’s a long word. The peak memory usage was ~ 5 Gb.
 
-**Evidence / calculations / observations:**
-
-TODO
 
 #### (b)
 
 **My answer:**
 
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
+The current most time consuming part of tokenizer training is finding the bytepair with maximum count, because it’s performed at each merging iteration and the comparison is performed across all byte pairs. It takes 27.474s for max itself and 25.481s for the lambda function called within max.
 
 ### train_bpe_expts_owt — BPE Training on OpenWebText
 
