@@ -2,8 +2,10 @@ import multiprocessing
 import os
 import regex as re
 from collections import defaultdict, Counter
+from collections.abc import Iterable, Iterator
 from functools import partial, reduce
 from typing import BinaryIO
+from typing import Self
 import pickle
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
@@ -207,6 +209,12 @@ class Tokenizer():
         for i, b in vocab.items():
             reverse_vocab[b] = i
         self.reverse_vocab = reverse_vocab # bytes -> id, encoding
+        # if special tokens are not in vocab, add them
+        if special_tokens != None:
+            for st in special_tokens:
+                if st.encode("utf-8") not in self.reverse_vocab:
+                    self.reverse_vocab[st.encode("utf-8")] = len(vocab)
+                    self.vocab[len(vocab)] = st.encode("utf-8")                
         merges_rank = dict()
         for i, pair in enumerate(merges):
             merges_rank[pair] = i
@@ -214,7 +222,7 @@ class Tokenizer():
         self.special_tokens = sorted(special_tokens, key=len, reverse=True) if special_tokens != None else []
 
     @classmethod
-    def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
+    def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None) -> Self:
         with open(vocab_filepath, "rb") as f:
             vocab = pickle.load(f)
         with open(merges_filepath, "rb") as f:
@@ -263,8 +271,9 @@ class Tokenizer():
             encoded.extend(self._encode_pretoken(pretoken))
         return encoded
 
-    def encode_iterable(self, iterable):
-        return None
+    def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
+        for s in iterable:
+            yield from self.encode(s)
 
     def decode(self, ids: list[int]) -> str:
         ret = b''
