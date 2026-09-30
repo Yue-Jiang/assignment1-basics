@@ -26,7 +26,13 @@ def parse_arguments():
         "-n", "--num-threads",
         type=int,
         help="Number of threads to use",
-        default=1
+        default=4
+    )
+    parser.add_argument(
+        "-c", "--num-chunks",
+        type=int,
+        help="Number of chunks to break input text into",
+        default=None       
     )
     parser.add_argument(
         "-o", "--output-prefix",
@@ -37,7 +43,9 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    vocab, merges = train_bpe(args.input_path, args.vocab_size, args.special_tokens, args.num_threads)
+    if args.num_chunks is None:
+        args.num_chunks = args.num_threads
+    vocab, merges = train_bpe(args.input_path, args.vocab_size, args.special_tokens, args.num_threads, args.num_chunks)
     with open(f"{args.output_prefix}-vocab.pkl", "wb") as f:
         pickle.dump(vocab, f)
     with open(f"{args.output_prefix}-merges.pkl", "wb") as f:
@@ -47,3 +55,5 @@ if __name__ == "__main__":
 # uv run python -m cProfile -o bpe.prof cs336_basics/train_bpe.py -i data/TinyStoriesV2-GPT4-train.txt -v 10000 -s "<|endoftext|>" -n 8 -o output/TinyStoriesV2-GPT4-trained-bpe
 # uv run --with memory-profiler mprof run --include-children --interval 0.1 --output bpe-memory.dat python cs336_basics/train_bpe.py -i data/TinyStoriesV2-GPT4-train.txt -v 10000 -s "<|endoftext|>" -n 8 -o output/TinyStoriesV2-GPT4-trained-bpe
 # uv run --with memory-profiler --with matplotlib mprof plot bpe-memory.dat
+
+# /usr/bin/time -l uv run python cs336_basics/train_bpe.py -i data/owt_train.txt -v 32000 -s "<|endoftext|>" -n 8 -c 500 -o output/owt_trained-bpe

@@ -2,86 +2,35 @@
 
 Handout: Spring 2026, version 26.0.3. See `cs336_assignment1_basics.pdf` for full prompts and deliverables.
 
-Status options: not started / in progress / ready for review / revised. All answers and results below are intentionally blank. Implementation sections track code and verification; they are not additional written deliverables.
-
-## Working setup
-
-- Hardware: MacBook Pro, M3 Pro, 18 GB unified memory
-- Python / PyTorch versions: TODO
-- Device used: TODO
-- Handout low-resource adaptations used: TODO
-- Experiment artifacts directory: TODO
-
-## Progress
-
-- [ ] `unicode1`
-- [ ] `unicode2`
-- [ ] `train_bpe`
-- [ ] `train_bpe_tinystories`
-- [ ] `train_bpe_expts_owt`
-- [ ] `tokenizer`
-- [ ] `tokenizer_experiments`
-- [ ] `linear`
-- [ ] `embedding`
-- [ ] `rmsnorm`
-- [ ] `positionwise_feedforward`
-- [ ] `rope`
-- [ ] `softmax`
-- [ ] `scaled_dot_product_attention`
-- [ ] `multihead_self_attention`
-- [ ] `transformer_block`
-- [ ] `transformer_lm`
-- [ ] `transformer_accounting`
-- [ ] `cross_entropy`
-- [ ] `learning_rate_tuning`
-- [ ] `adamw`
-- [ ] `adamw_accounting`
-- [ ] `learning_rate_schedule`
-- [ ] `gradient_clipping`
-- [ ] `data_loading`
-- [ ] `checkpointing`
-- [ ] `training_together`
-- [ ] `decoding`
-- [ ] `experiment_log`
-- [ ] `learning_rate`
-- [ ] `batch_size_experiment`
-- [ ] `generate`
-- [ ] `layer_norm_ablation`
-- [ ] `pre_norm_ablation`
-- [ ] `no_pos_emb`
-- [ ] `swiglu_ablation`
-- [ ] `main_experiment`
-- [ ] `leaderboard`
-
-## Responses
+Hardware: MacBook Pro, M3 Pro, 18 GB unified memory.
 
 ### unicode1 — Understanding Unicode
 
-**Status:** revised
-
 #### (a)
+
+**My answers:**
 
 chr(0) returns the null character.
 
 #### (b)
 
+**My answers:**
+
 chr(0).__repr__() returns `'\x00'`, and print(chr(0)) prints the invisible null character followed by a new line.
 
 #### (c)
+
+**My answers:**
 
 The representation of chr(0) is the string of its hexadecimal representation `\x00`. When chr(0) the null character is embedded in a string and printed out, the printed outcome shows nothing visible at the place where chr(0) the null character appears. However, it does take up one character in length. Also, ord(chr(0)) is the unicode code point of chr(0) the null character, and is the integer 0.
 
 ### unicode2 — Unicode Encodings
 
-**Status:** not started
-
 #### (a)
 
-**My answer:**
+**My answers:**
 
 UTF-8 uses fewer bytes for encoding the training material (English), thanks to it taking single bytes for ASCII characters.
-
-**Evidence / calculations / observations:**
 
 >>> len(list('ABCDEFGabcdefg'.encode('utf-8')))
 14
@@ -92,11 +41,9 @@ UTF-8 uses fewer bytes for encoding the training material (English), thanks to i
 
 #### (b)
 
-**My answer:**
+**My answers:**
 
 The function fails when the encoding uses more than one byte for a character. It goes through the encoding byte by byte for the entire string and is not aware of characters encoded by multiple bytes.
-
-**Evidence / calculations / observations:**
 
 >>> decode_utf8_bytes_to_str_wrong("您好".encode("utf-8"))
 Traceback (most recent call last):
@@ -116,11 +63,9 @@ b'\xe6\x82\xa8\xe5\xa5\xbd'
 
 #### (c)
 
-**My answer:**
+**My answers:**
 
 When the first byte starts with 11110 (240-247), utf-8 rules says it needs to look at the following three bytes for encoding. So the byte sequence [240, 1] cannot be decoded. In addition, the following bytes need to start with 10, so [240, 176] fails specifically for the unexpected end of data.
-
-**Evidence / calculations / observations:**
 
 >>> bytes([240,1]).decode('utf-8')
 Traceback (most recent call last):
@@ -136,148 +81,67 @@ Traceback (most recent call last):
     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
 UnicodeDecodeError: 'utf-8' codec can't decode bytes in position 0-1: unexpected end of data
 
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### train_bpe — BPE Tokenizer Training
 
 **Status:** done
 
 ### train_bpe_tinystories — BPE Training on TinyStories
 
-**Status:** not started
-
 #### (a)
 
-**My answer:**
+**My answers:**
 
 100s. Longest token is ‘ accomplishment’. Makes sense because it’s a long word. The peak memory usage was ~ 5 Gb.
 
-
 #### (b)
 
-**My answer:**
+**My answers:**
 
 The current most time consuming part of tokenizer training is finding the bytepair with maximum count, because it’s performed at each merging iteration and the comparison is performed across all byte pairs. It takes 27.474s for max itself and 25.481s for the lambda function called within max.
 
 ### train_bpe_expts_owt — BPE Training on OpenWebText
 
-**Status:** not started
+Had to switch from map to imap_unordered to avoid OOM kill.
 
 #### (a)
 
-**My answer:**
+**My answers:**
 
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
+The longest token is ‘’.
 
 #### (b)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### tokenizer — Implementing the tokenizer
 
-**Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
+**Status:** done
 
 ### tokenizer_experiments — Experiments with tokenizers
 
-**Status:** not started
-
 #### (a)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (b)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (c)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (d)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
@@ -285,221 +149,71 @@ TODO
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### embedding — Implement the embedding module
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### rmsnorm — Root Mean Square Layer Normalization
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### positionwise_feedforward — Implement the position-wise feed-forward network
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### rope — Implement RoPE
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### softmax — Implement softmax
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### scaled_dot_product_attention — Implement scaled dot-product attention
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### multihead_self_attention — Implement causal multi-head self-attention
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### transformer_block — Implement the Transformer block
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### transformer_lm — Implementing the Transformer LM
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### transformer_accounting — Transformer LM resource accounting
-
-**Status:** not started
 
 #### (a)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (b)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (c)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (d)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (e)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
@@ -507,43 +221,9 @@ TODO
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### learning_rate_tuning — Tuning the learning rate
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
@@ -551,67 +231,29 @@ TODO
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### adamw_accounting — Resource accounting for training with AdamW
-
-**Status:** not started
 
 #### (a)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (b)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (c)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (d)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
@@ -619,386 +261,90 @@ TODO
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### gradient_clipping — Implement gradient clipping
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### data_loading — Implement data loading
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### checkpointing — Implement model checkpointing
 
 **Status:** not started
-
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
 
 ### training_together — Put it together
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### decoding — Decoding
 
 **Status:** not started
 
-- Implementation file / function: TODO
-- Tests run and results: TODO
-- Remaining questions: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
-
-TODO
-
 ### experiment_log — Experiment logging
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### learning_rate — Tune the learning rate
 
-**Status:** not started
-
 #### (a)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
+**My answers:**
 
 TODO
 
 #### (b)
 
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### batch_size_experiment — Batch size variations
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### generate — Generate text
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### layer_norm_ablation — Remove RMSNorm and train
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### pre_norm_ablation — Implement post-norm and train
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### no_pos_emb — Implement NoPE
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### swiglu_ablation — SwiGLU vs. SiLU
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### main_experiment — Experiment on OWT
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO
 
 ### leaderboard — Leaderboard
 
-**Status:** not started
-
-**My answer:**
-
-TODO
-
-**Evidence / calculations / observations:**
-
-TODO
-
-**Experiment record:**
-
-- Configuration / seed / dataset: TODO
-- Device / elapsed time / training budget: TODO
-- Metrics / curves / generated text: TODO
-- Artifact paths: TODO
-- Deviations from the handout, if any: TODO
-
-**Questions for review:**
-
-TODO
-
-**Review notes / revision:**
+**My answers:**
 
 TODO

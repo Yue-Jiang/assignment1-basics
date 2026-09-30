@@ -113,29 +113,32 @@ def train_bpe(
     input_path: str,
     vocab_size: int,
     special_tokens: list[str],
-    num_processes: int
+    num_processes: int,
+    num_chunks: int
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
 
     # pretokenize
+    print(f"Pretokenizing, {num_chunks} chunks using {num_processes} threads", flush=True)
     with open(input_path, "rb") as f:
-        boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
+        boundaries = find_chunk_boundaries(f, num_chunks, b"<|endoftext|>")
 
-    with multiprocessing.Pool(processes=num_processes) as pool:
-        # Run pre-tokenization on your chunk and store the counts for each pre-token
-        func = partial(pretokenize, file_path=input_path, special_tokens=special_tokens)
-        dicts = pool.map(func, zip(boundaries[:-1], boundaries[1:]))
-    
     # Maintain 1: pretok_bytes_count_ledger is the most foundemental source of truth, and is updated each iteration
     # initialize pretok_bytes_count_ledger from pretokenize output
     pretok_count = defaultdict(int)
-    for d in dicts:
-        for k,v in d.items():
-            pretok_count[k] += v
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        # Run pre-tokenization on your chunk and store the counts for each pre-token async
+        # don't hold full results - otherwise tend to oom for owt training
+        func = partial(pretokenize, file_path=input_path, special_tokens=special_tokens)
+        dicts_iterator = pool.imap_unordered(func, zip(boundaries[:-1], boundaries[1:]))
+        for d in dicts_iterator:
+            for k,v in d.items():
+                pretok_count[k] += v
     pretok_bytes_count_ledger = dict()
     for k,v in pretok_count.items():
         pretok_bytes_count_ledger[len(pretok_bytes_count_ledger)] = (k, v)
     
     # Maintain 2: bytepair counts
+    print("Counting bytepairs")
     bp_count = defaultdict(int)
 
     # Maintain 3: reverse lookup: given byte pair, lookup the pretokein ids it belongs to
@@ -159,6 +162,7 @@ def train_bpe(
     # find the bytes to merge, record the merge in merges list, add merged bp to vocab
     # update the three maintained items to reflect the merge
     # keep going until vocab size is reached
+    print("Merging")
 
     while len(vocab) < vocab_size and len(bp_count) > 0:
         merge_bp = max(bp_count, key=lambda x: (bp_count[x], x[0], x[1]))
