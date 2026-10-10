@@ -101,7 +101,12 @@ The current most time consuming part of tokenizer training is finding the bytepa
 
 ### train_bpe_expts_owt — BPE Training on OpenWebText
 
-Had to switch from map to imap_unordered to avoid OOM kill.
+Had to switch from map to imap_unordered to avoid OOM kill. Also had to switch from list to set to store pretokens of byte pair reverse lookup to make training faster on my laptop. Turns out determining if an element is in a list is O(n), while for a set it’s O(1). This was not evident when training the smaller ministry dataset but for the owt data one byte pair can have many pretokens associated with it so the check for element presence becomes the bottle neck during the merging step.
+
+Finished in 7 hours, 52 minutes, 41 seconds. Your M3 Pro handled the full OpenWebText BPE training with a 32,000-token vocabulary.
+- Configuration: 8 worker processes, 500 chunks.
+- Maximum resident set size: approximately 5.77 GiB, not the combined simultaneous peak across workers.
+- Previous list-based run: still unfinished after 22.5 hours.
 
 #### (a)
 

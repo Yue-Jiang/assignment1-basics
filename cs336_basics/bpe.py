@@ -142,7 +142,7 @@ def train_bpe(
     bp_count = defaultdict(int)
 
     # Maintain 3: reverse lookup: given byte pair, lookup the pretokein ids it belongs to
-    bp_pretok = defaultdict(list)
+    bp_pretok = defaultdict(set)
 
     # initialize bp_count and bp_pretok
     for pretok_id,v in pretok_bytes_count_ledger.items():
@@ -150,7 +150,7 @@ def train_bpe(
         this_bp_count = count_bytepair(pretok_bytes)
         for bp,bc in this_bp_count.items():
             bp_count[bp] += pc * bc
-            bp_pretok[bp].append(pretok_id)
+            bp_pretok[bp].add(pretok_id)
 
     merges = []
     vocab = dict()
@@ -189,11 +189,11 @@ def train_bpe(
             for bp,bc in new_bp_count.items():
                 bp_count[bp] += pc * bc
                 if pretok_id not in bp_pretok[bp]:
-                    bp_pretok[bp].append(pretok_id)
+                    bp_pretok[bp].add(pretok_id)
         dropped_bps = set([k for k,v in bp_count.items() if v == 0])
         for bp in dropped_bps:
             bp_count.pop(bp, None)
-            bp_pretok.pop(bp, None)
+            bp_pretok.pop(bp)
 
         # bp_count = defaultdict(int)
         # bp_pretok = defaultdict(list)
