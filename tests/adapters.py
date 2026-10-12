@@ -8,8 +8,10 @@ import numpy.typing as npt
 import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
+from torch import nn
 
 from cs336_basics.bpe import train_bpe, Tokenizer
+from cs336_basics.transformer import Linear
 
 
 def run_linear(
@@ -30,8 +32,10 @@ def run_linear(
     Returns:
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
-
-    raise NotImplementedError
+    linear = Linear(d_in, d_out)
+    linear.load_state_dict({"weight": weights})
+    return linear(in_features)
+    
 
 
 def run_embedding(
