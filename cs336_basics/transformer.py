@@ -1,7 +1,7 @@
 import math
 import torch
 from torch import nn
-from einops import einsum
+from einops import einsum, rearrange
 
 class Linear(nn.Module):
     def __init__(
@@ -158,3 +158,61 @@ def scaled_dot_product_attention(
     attentoin_weights = softmax(attention_scores, dim=-1)
     ret = einsum(attentoin_weights, values, "... seq_len_q seq_len_k, ... seq_len_k d_v -> ... seq_len_q d_v")
     return ret
+
+class MultiheadSelfAttention(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int,
+        max_seq_len: int | None = None,
+        theta: float | None = None
+    ) -> None:
+        super().__init__()
+        self.q_proj = Linear(d_model, d_model)
+        self.k_proj = Linear(d_model, d_model)
+        self.v_proj = Linear(d_model, d_model)
+        self.o_proj = Linear(d_model, d_model)
+        d_k = d_model // num_heads
+        if d_model % num_heads != 0:
+            raise ValueError(f"model dimension ({d_model}) is not divisible by number of heads ({num_heads})")
+        if theta is not None:
+            if max_seq_len is None:
+                raise ValueError("need max_seq_len to perform RoPE")
+            if d_k % 2 != 0:
+                raise ValueError(f"d_k ({d_k}) needs to be an even number to perform RoPE")
+            self.rope = RotaryPositionalEmbedding(theta=theta, d_k=d_k, max_seq_len=max_seq_len)
+        else:
+            self.rope = None
+        self.d_model = d_model
+        self.num_heads = num_heads
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        token_positions: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """
+        x: (..., seq_len, d_model)
+        return: (..., seq_len, d_model)
+        with causal masking and RoPE. max_seq_len, theta, token_positions are for RoPE.
+        """
+        seq_len = x.shape[-2]
+        d_k = self.d_model // self.num_heads
+        if x.shape[-1] != self.d_model:
+            raise ValueError(f"input's last dim ({x.shape[-1]}) is different from MHA's ({self.d_model})")
+        if token_positions is None:
+            token_positions = torch.arange(seq_len, device=x.device)
+        Q = rearrange(self.q_proj(x), "... T (h d) -> ... h T d", h=self.num_heads, d=d_k)
+        K = rearrange(self.k_proj(x), "... T (h d) -> ... h T d", h=self.num_heads, d=d_k)
+        V = rearrange(self.v_proj(x), "... T (h d) -> ... h T d", h=self.num_heads, d=d_k)
+
+        if self.rope is not None:
+            token_positions = token_positions.unsqueeze(-2) # adds the head dimension: B T -> B h T
+            Q = self.rope(Q, token_positions)
+            K = self.rope(K, token_positions)
+        
+        mask = torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device).tril()
+        mha = scaled_dot_product_attention(Q, K, V, mask)
+        attn = rearrange(mha, "... h T d -> ... T (h d)", h=self.num_heads, d=d_k)
+        out = self.o_proj(attn)
+        return out
