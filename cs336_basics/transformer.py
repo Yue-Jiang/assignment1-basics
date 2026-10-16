@@ -216,3 +216,28 @@ class MultiheadSelfAttention(nn.Module):
         attn = rearrange(mha, "... h T d -> ... T (h d)", h=self.num_heads, d=d_k)
         out = self.o_proj(attn)
         return out
+
+class TransformerBlock(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int,
+        d_ff: int,
+        max_seq_len: int | None = None,
+        theta: float | None = None
+    ) -> None:
+        super().__init__()
+        self.layer_norm_1 = RMSNorm(d_model=d_model)
+        self.mha = MultiheadSelfAttention(d_model=d_model, num_heads=num_heads, max_seq_len=max_seq_len, theta=theta)
+        self.layer_norm_2 = RMSNorm(d_model=d_model)
+        self.ff = SwiGLU(d_model=d_model, d_ff=d_ff)
+
+    def forward(
+        self,
+        x: torch.Tensor
+    ) -> torch.Tensor:
+        mha_output = self.mha(self.layer_norm_1(x))
+        x = x + mha_output
+        ff_output = self.ff(self.layer_norm_2(x))
+        x = x + ff_output
+        return x
