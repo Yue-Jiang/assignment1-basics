@@ -11,7 +11,7 @@ from torch import Tensor
 from torch import nn
 
 from cs336_basics.bpe import train_bpe, Tokenizer
-from cs336_basics.transformer import Linear, Embedding, RMSNorm, SwiGLU, RotaryPositionalEmbedding, softmax, scaled_dot_product_attention, MultiheadSelfAttention, TransformerBlock
+from cs336_basics.transformer import Linear, Embedding, RMSNorm, SwiGLU, RotaryPositionalEmbedding, softmax, scaled_dot_product_attention, MultiheadSelfAttention, TransformerBlock, TransformerLM
 
 
 def run_linear(
@@ -391,7 +391,29 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    transformer_lm = TransformerLM(
+        vocab_size=vocab_size,
+        num_layers=num_layers,
+        d_model=d_model,
+        num_heads=num_heads,
+        d_ff=d_ff,
+        context_length=context_length,
+        theta=rope_theta
+    )
+    transformer_lm.token_embeddings.weight.data = weights["token_embeddings.weight"]
+    for i in range(num_layers):
+        transformer_lm.layers[i].layer_norm_1.weight.data = weights[f"layers.{i}.ln1.weight"]
+        transformer_lm.layers[i].mha.q_proj.weight.data = weights[f"layers.{i}.attn.q_proj.weight"]
+        transformer_lm.layers[i].mha.k_proj.weight.data = weights[f"layers.{i}.attn.k_proj.weight"]
+        transformer_lm.layers[i].mha.v_proj.weight.data = weights[f"layers.{i}.attn.v_proj.weight"]
+        transformer_lm.layers[i].mha.o_proj.weight.data = weights[f"layers.{i}.attn.output_proj.weight"]
+        transformer_lm.layers[i].layer_norm_2.weight.data = weights[f"layers.{i}.ln2.weight"]
+        transformer_lm.layers[i].ff.w1.weight.data = weights[f"layers.{i}.ffn.w1.weight"]
+        transformer_lm.layers[i].ff.w2.weight.data = weights[f"layers.{i}.ffn.w2.weight"]
+        transformer_lm.layers[i].ff.w3.weight.data = weights[f"layers.{i}.ffn.w3.weight"]
+    transformer_lm.ln_final.weight.data = weights["ln_final.weight"]
+    transformer_lm.lm_head.weight.data = weights["lm_head.weight"]
+    return transformer_lm(in_indices)
 
 
 def run_rmsnorm(
