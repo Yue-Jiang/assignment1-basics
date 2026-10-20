@@ -277,3 +277,15 @@ class TransformerLM(nn.Module):
         x = self.ln_final(x)
         x = self.lm_head(x)
         return x
+
+def log_softmax(x: torch.Tensor, dim: int) -> torch.Tensor:
+    shifted = x - x.amax(dim=dim, keepdim=True)
+    exp = shifted.exp()
+    return shifted - exp.sum(dim=dim, keepdim=True).log()
+
+def cross_entropy(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    """
+    logits: (..., V)
+    targets: (...)
+    """
+    return -log_softmax(logits, dim=-1).gather(dim=-1, index=targets.unsqueeze(-1)).mean()
