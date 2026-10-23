@@ -305,13 +305,13 @@ The attn FLOPs scales quadratically with T so that components’ proportional FL
 
 ### cross_entropy — Implement cross-entropy
 
-**Status:** not started
+**Status:** done
 
 ### learning_rate_tuning — Tuning the learning rate
 
 **My answers:**
 
-TODO
+With lr = 1e1 the loss decays slower than lr = 1e2. But lr = 1e3 makes the loss diverge.
 
 ### adamw — Implement AdamW
 
